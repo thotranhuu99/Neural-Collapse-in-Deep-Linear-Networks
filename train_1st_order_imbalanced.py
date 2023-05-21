@@ -4,8 +4,8 @@ import torch
 
 import models
 from utils import *
-from args_unbalance import parse_train_args
-from datasets_unbalance import make_dataset
+from args_imbalanced import parse_train_args
+from datasets_imbalanced import make_dataset
 from tqdm import tqdm
 
 CIFAR10_TRAIN_SAMPLES = (100, 100, 200, 200, 300, 300, 400, 400, 500, 500)
@@ -108,7 +108,7 @@ def train(args, model, trainloader):
 def main():
     args = parse_train_args()
     args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
-    name = "unbalanced_" + args.dataset + "-" + args.model \
+    name = "imbalanced_" + args.dataset + "-" + args.model \
            + "-" + args.loss + "-" + args.optimizer \
            + "-width_" + str(args.width) \
            + "-depth_relu_" + str(args.depth_relu) \

@@ -6,8 +6,8 @@ import scipy.linalg as scilin
 
 import models
 from utils import *
-from args_unbalance import parse_eval_args
-from datasets_unbalance import make_dataset
+from args_imbalanced import parse_eval_args
+from datasets_imbalanced import make_dataset
 import time
 import math
 import numpy as np
@@ -223,7 +223,7 @@ def compute_Sigma_B(mu_c_dict, mu_G):
 def main():
     args = parse_eval_args()
     args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
-    name = "unbalanced_" + args.dataset + "-" + args.model \
+    name = "imbalanced_" + args.dataset + "-" + args.model \
            + "-" + args.loss + "-" + args.optimizer \
            + "-width_" + str(args.width) \
            + "-depth_relu_" + str(args.depth_relu) \

@@ -32,10 +32,10 @@ CUDA_VISIBLE_DEVICES=0 python synthetic_experiment_balanced.py --hidden 64 --num
 Multilayer perceptron experiment\
 args: --width in [512], --depth_linear in [1, 3, 6]
 ```
-CUDA_VISIBLE_DEVICES=0 python train_1st_order_unbalanced.py --model MLP --dataset cifar10 \
+CUDA_VISIBLE_DEVICES=0 python train_1st_order_imbalanced.py --model MLP --dataset cifar10 \
             --depth_relu 6 --depth_linear 1 --width 2048 --seed 1 --no-bias \
             --loss MSE --lr 0.0001 --weight_decay 0.00001 --optimizer Adam --sep_decay  --epochs 12000 --patience 6000
-CUDA_VISIBLE_DEVICES=0 python validate_NC_unbalanced.py --model MLP --dataset cifar10 \
+CUDA_VISIBLE_DEVICES=0 python validate_NC_imbalanced.py --model MLP --dataset cifar10 \
             --depth_relu 6 --depth_linear 1 --width 2048 --seed 1 --no-bias \
             --loss MSE --lr 0.0001 --weight_decay 0.00001 --optimizer Adam --sep_decay  --epochs 12000 --patience 6000
 ```

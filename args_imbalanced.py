@@ -64,7 +64,7 @@ def parse_train_args():
 
     args.timestamp = datetime.datetime.now().strftime("%a-%b-%d-%H:%M:%S")
     
-    name = "unbalanced_" + args.dataset + "-" + args.model \
+    name = "imbalanced_" + args.dataset + "-" + args.model \
            + "-" + args.loss + "-" + args.optimizer \
            + "-width_" + str(args.width) \
            + "-depth_relu_" + str(args.depth_relu) \
