@@ -2,26 +2,10 @@ import torch
 import pickle
 import numpy as np
 from torch.utils.data import DataLoader
-from torchvision.datasets import CIFAR10, MNIST
+from torchvision.datasets import CIFAR10, MNIST, EMNIST
 import torchvision.transforms as transforms
 from torch.utils.data.sampler import SubsetRandomSampler
 
-class CIFAR10RandomLabels(CIFAR10):
-    # Part from https://github.com/pluskid/fitting-random-labels/blob/master/cifar10_data.py
-    """CIFAR10 dataset, with support for randomly corrupt labels.
-    ######## Need to generate a set of all randomed label first #########
-    ### Check for generate_random_label.py for an example ###
-    """
-    def __init__(self, **kwargs):
-        super(CIFAR10RandomLabels, self).__init__(**kwargs)
-        if self.train:
-            with open(self.root+'/cifar10_random_label/train_label.pkl', 'rb') as f:
-                train_all = pickle.load(f)
-                self.targets = train_all["label"]
-        else:
-            with open(self.root+'/cifar10_random_label/test_label.pkl', 'rb') as f:
-                test_all = pickle.load(f)
-                self.targets = test_all["label"]
 
 def make_dataset(dataset_name, data_dir, batch_size=128, sample_size=None, SOTA=False):
 
@@ -61,18 +45,22 @@ def make_dataset(dataset_name, data_dir, batch_size=128, sample_size=None, SOTA=
             transforms.Normalize((0.1307,), (0.3081,))
             ]))
         num_classes = 10
-    elif dataset_name == 'cifar10_random':
-        print('Dataset: CIFAR10 with random label.')
-        trainset = CIFAR10RandomLabels(root=data_dir, train=True, download=True, transform=transforms.Compose([
+    elif dataset_name == 'emnist':
+        print('Dataset: EMNIST.')
+        trainset = EMNIST(root=data_dir, split="letters", train=True, download=True, transform=transforms.Compose([
+            transforms.Grayscale(3),
+            transforms.Resize(32),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize((0.1722,), (0.3309,))
             ]))
 
-        testset = CIFAR10RandomLabels(root=data_dir, train=False, download=True, transform=transforms.Compose([
+        testset = EMNIST(root=data_dir, split="letters", train=False, download=True, transform=transforms.Compose([
+            transforms.Grayscale(3),
+            transforms.Resize(32),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize((0.1722,), (0.3309,))
             ]))
-        num_classes = 10
+        num_classes = 26
     else:
         raise ValueError
 

@@ -16,7 +16,7 @@ CUDA_VISIBLE_DEVICES=0 python validate_NC.py --model MLP --dataset cifar10 \
             --loss MSE --lr 0.0001 --optimizer Adam --sep_decay 
 ```
 Deep learning experiment\
-args: --model in [ResNet18, VGG16], --width in [512], --depth_linear in [1, 3, 6, 9]
+args: --dataset in ["cifar10", "emnist"],--model in [ResNet18, VGG16], --width in [512], --depth_linear in [1, 3, 6, 9]
 ```
 CUDA_VISIBLE_DEVICES=0 python train_1st_order.py --model ResNet18 --dataset cifar10 \
 --depth_linear 1 --width 512 --seed 1
@@ -30,7 +30,7 @@ CUDA_VISIBLE_DEVICES=0 python synthetic_experiment_balanced.py --hidden 64 --num
 ```
 ***Imbalanced data***\
 Multilayer perceptron experiment\
-args: --width in [512], --depth_linear in [1, 3, 6]
+args: --dataset in ["cifar10", "emnist"], --width in [512], --depth_linear in [1, 3, 6]
 ```
 CUDA_VISIBLE_DEVICES=0 python train_1st_order_imbalanced.py --model MLP --dataset cifar10 \
             --depth_relu 6 --depth_linear 1 --width 2048 --seed 1 --no-bias \

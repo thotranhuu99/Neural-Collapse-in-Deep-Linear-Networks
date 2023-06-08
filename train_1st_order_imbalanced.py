@@ -9,14 +9,19 @@ from datasets_imbalanced import make_dataset
 from tqdm import tqdm
 
 CIFAR10_TRAIN_SAMPLES = (100, 100, 200, 200, 300, 300, 400, 400, 500, 500)
+EMNIST_TRAIN_SAMPLES = [1500, * [600]*5, * [50]*20]
 
 
 def loss_compute(args, model, criterion, outputs, targets):
     if args.loss == 'CrossEntropy':
         loss = criterion(outputs[0], targets)
     elif args.loss == 'MSE':
-        loss = criterion(outputs[0], nn.functional.one_hot(
-            targets, num_classes=10).type(torch.FloatTensor).to(args.device))
+        if args.dataset == "emnist":
+            loss = criterion(outputs[0], nn.functional.one_hot(
+            targets, num_classes=26).type(torch.FloatTensor).to(args.device))
+        else:
+            loss = criterion(outputs[0], nn.functional.one_hot(
+                targets, num_classes=10).type(torch.FloatTensor).to(args.device))
 
     # Now decide whether to add weight decay on last weights and last features
     if args.sep_decay:
@@ -47,7 +52,8 @@ def trainer(args, model, trainloader, epoch_id, criterion, optimizer, scheduler,
     print_and_save('\nTraining Epoch: [%d | %d] LR: %f' % (
         epoch_id + 1, args.epochs, scheduler.get_last_lr()[-1]), logfile)
     for batch_idx, (inputs, targets) in enumerate(trainloader):
-
+        if args.dataset == "emnist":
+            targets = targets-1
         inputs, targets = inputs.to(args.device), targets.to(args.device)
 
         model.train()
@@ -107,7 +113,10 @@ def train(args, model, trainloader):
 
 def main():
     args = parse_train_args()
-    args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
+    if args.dataset == "cifar10":
+        args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
+    elif args.dataset == "emnist":
+        args.batch_size = sum(EMNIST_TRAIN_SAMPLES)
     name = "imbalanced_" + args.dataset + "-" + args.model \
            + "-" + args.loss + "-" + args.optimizer \
            + "-width_" + str(args.width) \
@@ -128,6 +137,10 @@ def main():
     if args.dataset == "cifar10":
         trainloader, _, num_classes = make_dataset(args.dataset, args.data_dir,
                                                    CIFAR10_TRAIN_SAMPLES, args.batch_size,
+                                                   args.sample_size)
+    if args.dataset == "emnist":
+        trainloader, _, num_classes = make_dataset(args.dataset, args.data_dir,
+                                                   EMNIST_TRAIN_SAMPLES, args.batch_size,
                                                    args.sample_size)
 
     if args.model == "MLP":

@@ -29,7 +29,7 @@ def parse_train_args():
     parser.add_argument('--use_cudnn', type=bool, default=True)
 
     # Directory Setting
-    parser.add_argument('--dataset', type=str, choices=['mnist', 'cifar10', 'cifar10_random', 'fashionmnist'], default='mnist')
+    parser.add_argument('--dataset', type=str, choices=['cifar10', "emnist"], default='cifar10')
     parser.add_argument('--data_dir', type=str, default='~/data')
     # parser.add_argument('--uid', type=str, default=None)
     parser.add_argument('--force', action='store_true', help='force to override the given uid')
@@ -119,7 +119,7 @@ def parse_eval_args():
     parser.add_argument('--gpu_id', type=int, default=0)
 
     # Directory Setting
-    parser.add_argument('--dataset', type=str, choices=['mnist', 'cifar10', 'cifar10_random'], default='mnist')
+    parser.add_argument('--dataset', type=str, choices=['cifar10', "emnist"], default='cifar10')
     parser.add_argument('--data_dir', type=str, default='~/data')
 
     # Learning Options

@@ -41,6 +41,8 @@ def trainer(args, model, trainloader, epoch_id, criterion, optimizer, scheduler,
     print_and_save('\nTraining Epoch: [%d | %d] LR: %f' % (epoch_id + 1, args.epochs, scheduler.get_last_lr()[-1]), logfile)
     for batch_idx, (inputs, targets) in enumerate(trainloader):
 
+        if args.dataset == "emnist":
+            targets = targets-1
         inputs, targets = inputs.to(args.device), targets.to(args.device)
 
         model.train()
@@ -52,7 +54,12 @@ def trainer(args, model, trainloader, epoch_id, criterion, optimizer, scheduler,
             if args.loss == 'CrossEntropy':
                 loss = criterion(outputs[0], targets)
             elif args.loss == 'MSE':
-                loss = criterion(outputs[0], nn.functional.one_hot(targets, num_classes=10).type(torch.FloatTensor).to(args.device))
+                if args.dataset == "emnist":
+                    loss = criterion(outputs[0], nn.functional.one_hot(
+                    targets, num_classes=26).type(torch.FloatTensor).to(args.device))
+                else:
+                    loss = criterion(outputs[0], nn.functional.one_hot(
+                        targets, num_classes=10).type(torch.FloatTensor).to(args.device))
 
         optimizer.zero_grad()
         loss.backward()

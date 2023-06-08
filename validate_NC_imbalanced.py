@@ -13,22 +13,26 @@ import math
 import numpy as np
 import os
 from sympy import Symbol, solve, S
-
-
-MNIST_TRAIN_SAMPLES =[5923, 6742, 5958, 6131, 5842, 5421, 5918, 6265, 5851, 594]
-MNIST_TEST_SAMPLES = [980, 1135, 1032, 1010, 982, 892, 958, 1028, 974, 1009]
 CIFAR10_TRAIN_SAMPLES = [100, 100, 200, 200, 300, 300, 400, 400, 500, 500]
 
 CIFAR10_TEST_SAMPLES = 10 * (1000,)
-NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+# NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+EMNIST_LETTER_TRAIN_SAMPLES = [1500, * [600]*5, * [50]*20]
+EMNIST_LETTER_TEST_SAMPLES = 26 * (800,)
 
 
-def compute_s(weight_decay, feature_decay_rate, depth, device):
+def compute_s(weight_decay, feature_decay_rate, depth, device, dataset):
     c = 1
-    s_array = torch.zeros(len(CIFAR10_TRAIN_SAMPLES), device=device)
-    x = compute_x(CIFAR10_TRAIN_SAMPLES, depth, weight_decay, feature_decay_rate, device=device)
-    s_array = pow(NUM_TRAIN_SAMPLES*feature_decay_rate *
-                  pow(x, depth) / c, 1/(2*depth))
+    if dataset == "cifar10":
+        s_array = torch.zeros(len(CIFAR10_TRAIN_SAMPLES), device=device)
+        x = compute_x(CIFAR10_TRAIN_SAMPLES, depth, weight_decay, feature_decay_rate, device=device)
+        s_array = pow(sum(CIFAR10_TRAIN_SAMPLES)*feature_decay_rate *
+                    pow(x, depth) / c, 1/(2*depth))
+    elif dataset == "emnist":
+        s_array = torch.zeros(len(EMNIST_LETTER_TRAIN_SAMPLES), device=device)
+        x = compute_x(EMNIST_LETTER_TRAIN_SAMPLES, depth, weight_decay, feature_decay_rate, device=device)
+        s_array = pow(sum(EMNIST_LETTER_TRAIN_SAMPLES)*feature_decay_rate *
+                    pow(x, depth) / c, 1/(2*depth))
     
     return s_array
 
@@ -53,7 +57,13 @@ def compute_NC2_W_GOF(W, s_array, depth):
     metric = torch.norm(WWT - sub, p='fro')
     return metric.detach().cpu().numpy().item()
 
-def compute_NC2_H_GOF(mu_c_dict, s_array, feature_decay_rate, depth):
+def compute_NC2_H_GOF(mu_c_dict, s_array, feature_decay_rate, depth, dataset):
+    if dataset == "cifar10":
+        NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+    elif dataset == "emnist":
+        NUM_TRAIN_SAMPLES = sum(EMNIST_LETTER_TRAIN_SAMPLES)
+    else:
+        raise Exception
     K = len(mu_c_dict)
     H = torch.empty(mu_c_dict[0].shape[0], K, device = s_array.device)
     for i in range(K):
@@ -68,7 +78,11 @@ def compute_NC2_H_GOF(mu_c_dict, s_array, feature_decay_rate, depth):
     metric = torch.norm(HTH - sub, p='fro')
     return metric.detach().cpu().numpy().item()
 
-def compute_NC3_WH(W, mu_c_dict, s_array, feature_decay_rate, depth):
+def compute_NC3_WH(W, mu_c_dict, s_array, feature_decay_rate, depth, dataset):
+    if dataset == "cifar10":
+        NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+    elif dataset == "emnist":
+        NUM_TRAIN_SAMPLES = sum(EMNIST_LETTER_TRAIN_SAMPLES)
     K = len(mu_c_dict)
     H = torch.empty(mu_c_dict[0].shape[0], K, device = W.device)
     for i in range(K):
@@ -83,10 +97,15 @@ def compute_NC3_WH(W, mu_c_dict, s_array, feature_decay_rate, depth):
     res = torch.norm(WH - sub, p='fro')
     return res.detach().cpu().numpy().item()
 
-def compute_NC3_W_sub_H(W, mu_c_dict, s_array, feature_decay_rate, depth):
+def compute_NC3_W_sub_H(W, mu_c_dict, s_array, feature_decay_rate, depth, dataset):
     K = len(mu_c_dict)
     H = torch.empty(mu_c_dict[0].shape[0], K, device = W.device)
-    diag_array = torch.zeros(len(CIFAR10_TRAIN_SAMPLES), device = W.device)
+    if dataset == "cifar10":
+        diag_array = torch.zeros(len(CIFAR10_TRAIN_SAMPLES), device = W.device)
+        NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+    elif dataset == "emnist":
+        diag_array = torch.zeros(len(EMNIST_LETTER_TRAIN_SAMPLES), device = W.device)
+        NUM_TRAIN_SAMPLES = sum(EMNIST_LETTER_TRAIN_SAMPLES)
     for i in range(K):
         H[:, i] = mu_c_dict[i]
         diag_array[i] = s_array[i]**(2*depth) + NUM_TRAIN_SAMPLES*feature_decay_rate
@@ -96,7 +115,7 @@ def compute_NC3_W_sub_H(W, mu_c_dict, s_array, feature_decay_rate, depth):
     res = torch.norm(W - sub, p='fro')
     return res.detach().cpu().numpy().item()
 
-def compute_NC3_W_div_H(W, mu_c_dict, s_array,feature_decay_rate, CIFAR10_TRAIN_SAMPLES, depth):
+def compute_NC3_W_div_H(W, mu_c_dict, s_array,feature_decay_rate, depth, dataset):
     K = len(mu_c_dict)
     H = torch.empty(mu_c_dict[0].shape[0], K, device = W.device)
     for i in range(K):
@@ -104,8 +123,15 @@ def compute_NC3_W_div_H(W, mu_c_dict, s_array,feature_decay_rate, CIFAR10_TRAIN_
     HTH = torch.mm(H.T, H)
     WWT = torch.mm(W, W.T)
     if depth == 1:
-        diag = torch.FloatTensor(CIFAR10_TRAIN_SAMPLES).to(W.device)
+        if dataset == "cifar10":
+            diag = torch.FloatTensor(CIFAR10_TRAIN_SAMPLES).to(W.device)
+        elif dataset == "emnist":
+            diag = torch.FloatTensor(EMNIST_LETTER_TRAIN_SAMPLES).to(W.device)
     else:
+        if dataset == "cifar10":
+            NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+        elif dataset == "emnist":
+            NUM_TRAIN_SAMPLES = sum(EMNIST_LETTER_TRAIN_SAMPLES)
         diag = pow((pow(s_array, 2*depth) + NUM_TRAIN_SAMPLES * feature_decay_rate), 2)
     res = torch.norm(torch.diagonal(WWT) / torch.diagonal(HTH) - diag)
     return res
@@ -123,15 +149,20 @@ class FCFeatures:
 
 def compute_info(args, model, fc_features, dataloader, isTrain=True):
     mu_G_list = [0] * (len(model.fc))
-    pairs = [(i, 0) for i in range(len(CIFAR10_TRAIN_SAMPLES))]
+    if args.dataset == "cifar10":
+        pairs = [(i, 0) for i in range(len(CIFAR10_TRAIN_SAMPLES))]
+    elif args.dataset == "emnist":
+        pairs = [(i, 0) for i in range(len(EMNIST_LETTER_TRAIN_SAMPLES))]
     mu_c_dict_list = [dict(pairs) for i in range(len(model.fc))]
     mu_c_dict_list_count = [dict(pairs) for i in range(len(model.fc))]
     top1 = AverageMeter()
     top5 = AverageMeter()
     
     for batch_idx, (inputs, targets) in enumerate(dataloader):
-
-        inputs, targets = inputs.to(args.device), targets.to(args.device)
+        if args.dataset == "cifar10":
+            inputs, targets = inputs.to(args.device), targets.to(args.device)
+        elif args.dataset == "emnist":
+            inputs, targets = inputs.to(args.device), (targets-1).to(args.device)
 
         with torch.no_grad():
             outputs = model(inputs)
@@ -146,22 +177,38 @@ def compute_info(args, model, fc_features, dataloader, isTrain=True):
                 fc_features[i].clear()
                 mu_G_list[i] += torch.sum(features_list[i], dim=0)
             for i in range(len(model.fc)):
-                for y in range(len(CIFAR10_TRAIN_SAMPLES)):
-                    indexes = (targets == y).nonzero(as_tuple=True)[0]
-                    if indexes.nelement()==0:
-                        mu_c_dict_list[i][y] += 0
-                    else:
-                        mu_c_dict_list[i][y] += features_list[i][indexes, :].sum(dim=0)
-                        mu_c_dict_list_count[i][y] += indexes.shape[0]
-    if args.dataset == 'mnist':
-        pass
-    elif args.dataset == 'cifar10' or args.dataset == 'cifar10_random':
+                if args.dataset == "cifar10":
+                    for y in range(len(CIFAR10_TRAIN_SAMPLES)):
+                        indexes = (targets == y).nonzero(as_tuple=True)[0]
+                        if indexes.nelement()==0:
+                            mu_c_dict_list[i][y] += 0
+                        else:
+                            mu_c_dict_list[i][y] += features_list[i][indexes, :].sum(dim=0)
+                            mu_c_dict_list_count[i][y] += indexes.shape[0]
+                if args.dataset == "emnist":
+                    for y in range(len(EMNIST_LETTER_TRAIN_SAMPLES)):
+                        indexes = (targets == y).nonzero(as_tuple=True)[0]
+                        if indexes.nelement()==0:
+                            mu_c_dict_list[i][y] += 0
+                        else:
+                            mu_c_dict_list[i][y] += features_list[i][indexes, :].sum(dim=0)
+                            mu_c_dict_list_count[i][y] += indexes.shape[0]
+    if args.dataset == 'cifar10':
         if isTrain:
             
             for i in range(len(model.fc)):
                 mu_G_list[i] /= sum(CIFAR10_TRAIN_SAMPLES)
                 for j in range(len(CIFAR10_TRAIN_SAMPLES)):
                     mu_c_dict_list[i][j] /= CIFAR10_TRAIN_SAMPLES[j]
+        else:
+            pass
+    elif args.dataset == "emnist":
+        if isTrain:
+            
+            for i in range(len(model.fc)):
+                mu_G_list[i] /= sum(EMNIST_LETTER_TRAIN_SAMPLES)
+                for j in range(len(EMNIST_LETTER_TRAIN_SAMPLES)):
+                    mu_c_dict_list[i][j] /= EMNIST_LETTER_TRAIN_SAMPLES[j]
         else:
             pass
     if isTrain:
@@ -193,14 +240,10 @@ def compute_Sigma_W(args, model, fc_features, mu_c_dict, dataloader, isTrain=Tru
             if indexes.nelement()==0:
                 pass
             else:
-                Sigma_W += ((features[indexes, :] - mu_c_dict[y]).unsqueeze(2) @ (features[indexes, :] - mu_c_dict[y]).unsqueeze(1)).sum(0)
-
-    if args.dataset == 'mnist':
-        if isTrain:
-            Sigma_W /= sum(MNIST_TRAIN_SAMPLES)
-        else:
-            Sigma_W /= sum(MNIST_TEST_SAMPLES)
-    elif args.dataset == 'cifar10' or args.dataset == 'cifar10_random':
+                # Sigma_W += ((features[indexes, :] - mu_c_dict[y]).unsqueeze(2) @ (features[indexes, :] - mu_c_dict[y]).unsqueeze(1)).sum(0)
+                for W_index in range(len(indexes)):
+                    Sigma_W += ((features[indexes[W_index], :] - mu_c_dict[y]).unsqueeze(1) @ (features[indexes[W_index], :] - mu_c_dict[y]).unsqueeze(0))
+    if args.dataset == 'cifar10':
         if isTrain:
             Sigma_W /= sum(CIFAR10_TRAIN_SAMPLES)
         else:
@@ -222,7 +265,11 @@ def compute_Sigma_B(mu_c_dict, mu_G):
 
 def main():
     args = parse_eval_args()
-    args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
+    if args.dataset == "emnist":
+        args.batch_size = sum(EMNIST_LETTER_TRAIN_SAMPLES)
+    elif args.dataset == "cifar10":
+        args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
+    
     name = "imbalanced_" + args.dataset + "-" + args.model \
            + "-" + args.loss + "-" + args.optimizer \
            + "-width_" + str(args.width) \
@@ -238,12 +285,16 @@ def main():
 
     device = torch.device("cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu")
     args.device = device
-    args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
+    # args.batch_size = sum(CIFAR10_TRAIN_SAMPLES)
     set_seed(manualSeed = args.seed)
 
     if args.dataset == "cifar10":
         trainloader, testloader, num_classes = make_dataset(args.dataset, args.data_dir,
                                                             CIFAR10_TRAIN_SAMPLES, args.batch_size,
+                                                            args.sample_size)
+    elif args.dataset == "emnist":
+        trainloader, testloader, num_classes = make_dataset(args.dataset, args.data_dir,
+                                                            EMNIST_LETTER_TRAIN_SAMPLES, args.batch_size,
                                                             args.sample_size)
     
     if args.model == "MLP":
@@ -260,7 +311,7 @@ def main():
     for i in reversed(range(len(model.fc))):
         model.fc[i].register_forward_pre_hook(fc_features[len(model.fc) - 1 - i])
 
-    s_array = compute_s(args.weight_decay, args.feature_decay_rate, args.depth_linear, device=device)
+    s_array = compute_s(args.weight_decay, args.feature_decay_rate, args.depth_linear, device=device, dataset=args.dataset)
 
     for epoch in range(args.epochs):
         if epoch % 100 == 0 or epoch == args.epochs - 1:
@@ -299,12 +350,13 @@ def main():
         NC1_collapse_metric = np.trace(Sigma_W @ scilin.pinv(Sigma_B)) / len(mu_c_dict_train_dict[-1])
 
         NC2_W = compute_NC2_W_GOF(W_list[-1].clone(), s_array, args.depth_linear)
-        NC2_H = compute_NC2_H_GOF(mu_c_dict_train_dict[-1], s_array, args.feature_decay_rate, args.depth_linear)
+        NC2_H = compute_NC2_H_GOF(mu_c_dict_train_dict[-1], s_array, args.feature_decay_rate, args.depth_linear, dataset=args.dataset)
         NC3_W_sub_H = compute_NC3_W_sub_H(W_list[-1].clone(), mu_c_dict_train_dict[-1], s_array,
-                                          args.feature_decay_rate, args.depth_linear)
+                                          args.feature_decay_rate, args.depth_linear, dataset=args.dataset)
         NC3_WH = compute_NC3_WH(W_list[-1].clone(), mu_c_dict_train_dict[-1],
-                                s_array, args.feature_decay_rate, args.depth_linear)
-        NC3_W_div_H = compute_NC3_W_div_H(W_list[-1].clone(), mu_c_dict_train_dict[-1], s_array, args.feature_decay_rate, CIFAR10_TRAIN_SAMPLES, args.depth_linear)
+                                s_array, args.feature_decay_rate, args.depth_linear, dataset=args.dataset)
+        NC3_W_div_H = compute_NC3_W_div_H(W_list[-1].clone(), mu_c_dict_train_dict[-1], s_array, args.feature_decay_rate, args.depth_linear,
+                                          dataset=args.dataset)
 
 
         print(time.time()-start)
