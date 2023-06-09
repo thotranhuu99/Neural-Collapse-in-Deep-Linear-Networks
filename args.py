@@ -1,10 +1,7 @@
 import os
-import shutil
 import datetime
 import argparse
-
 import torch
-import numpy as np
 
 
 def parse_train_args():
@@ -17,7 +14,6 @@ def parse_train_args():
     parser.add_argument('--fixdim', dest='fixdim', type=int, default=0)
     parser.add_argument('--data_augmentation', dest='data_augmentation', action='store_true')
     
-    # MLP settings (only when using mlp and res_adapt(in which case only width has effect))
     parser.add_argument('--width', type=int, default=1024)
     parser.add_argument('--depth_relu', type=int, default=6)
 
@@ -29,7 +25,6 @@ def parse_train_args():
     # Directory Setting
     parser.add_argument('--dataset', type=str, choices=['cifar10', "emnist"], default='cifar10')
     parser.add_argument('--data_dir', type=str, default='~/data')
-    # parser.add_argument('--uid', type=str, default=None)
     parser.add_argument('--force', action='store_true', help='force to override the given uid')
 
     # Learning Options
@@ -50,7 +45,6 @@ def parse_train_args():
     parser.add_argument('--optimizer', default='SGD', help='optimizer to use')
     parser.add_argument('--optimizer_pretrain', default='SGD', help='optimizer to use')
     parser.add_argument('--weight_decay', type=float, default=1e-4, help='weight decay')
-    # The following two should be specified when testing adding wd on Features
     parser.add_argument('--sep_decay', action='store_true', help='whether to separate weight decay to last feature and last weights')
     parser.add_argument('--feature_decay_rate', type=float, default=1e-4, help='weight decay for last layer feature')
     parser.add_argument('--history_size', type=int, default=10, help='history size for LBFGS')
@@ -105,10 +99,8 @@ def parse_eval_args():
     parser.add_argument('--no-bias', dest='bias', action='store_false')
     parser.add_argument('--ETF_fc', dest='ETF_fc', action='store_true')
     parser.add_argument('--fixdim', dest='fixdim', type=int, default=0)
-    parser.add_argument('--SOTA', dest='SOTA', action='store_true')
     parser.add_argument('--data_augmentation', dest='data_augmentation', action='store_true')
     
-    # MLP settings (only when using mlp and res_adapt(in which case only width has effect))
     parser.add_argument('--width', type=int, default=1024)
     parser.add_argument('--depth_relu', type=int, default=6)
 
@@ -118,7 +110,6 @@ def parse_eval_args():
     # Directory Setting
     parser.add_argument('--dataset', type=str, choices=['cifar10', 'emnist'], default='mnist')
     parser.add_argument('--data_dir', type=str, default='~/data')
-    # parser.add_argument('--load_path', type=str, default=None)
 
     # Learning Options
     parser.add_argument('--epochs', type=int, default=200, help='Max Epochs')

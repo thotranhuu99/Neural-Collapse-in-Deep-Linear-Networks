@@ -1,7 +1,5 @@
 import sys
-
 import torch
-
 import models
 from utils import *
 from args_imbalanced import parse_train_args
@@ -136,24 +134,16 @@ def main():
 
     if args.dataset == "cifar10":
         trainloader, _, num_classes = make_dataset(args.dataset, args.data_dir,
-                                                   CIFAR10_TRAIN_SAMPLES, args.batch_size,
-                                                   args.sample_size)
-    if args.dataset == "emnist":
+                                                   CIFAR10_TRAIN_SAMPLES, args.batch_size)
+    elif args.dataset == "emnist":
         trainloader, _, num_classes = make_dataset(args.dataset, args.data_dir,
-                                                   EMNIST_TRAIN_SAMPLES, args.batch_size,
-                                                   args.sample_size)
+                                                   EMNIST_TRAIN_SAMPLES, args.batch_size)
 
     if args.model == "MLP":
         model = models.__dict__[args.model](hidden=args.width, depth_relu=args.depth_relu,
                                             depth_linear=args.depth_linear, fc_bias=args.bias, num_classes=num_classes, batchnorm=False).to(device)
 
-    elif args.model.startswith("VGG"):
-        model = models.__dict__[args.model](hidden=args.width, depth_linear=args.depth_linear,
-                                            pretrained=args.pretrained, num_classes=num_classes, fc_bias=args.bias).to(device)
-    elif args.model.startswith("ResNet"):
-        model = models.__dict__[args.model](hidden=args.width, depth_linear=args.depth_linear,
-                                            pretrained=args.pretrained, num_classes=num_classes, fc_bias=args.bias).to(device)
-    elif args.model.startswith("shufflenet"):
+    else:
         model = models.__dict__[args.model](hidden=args.width, depth_linear=args.depth_linear,
                                             pretrained=args.pretrained, num_classes=num_classes, fc_bias=args.bias).to(device)
 

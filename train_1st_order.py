@@ -1,5 +1,4 @@
 import sys
-
 import torch
 
 import models
@@ -12,7 +11,12 @@ def loss_compute(args, model, criterion, outputs, targets):
     if args.loss == 'CrossEntropy':
         loss = criterion(outputs[0], targets)
     elif args.loss == 'MSE':
-        loss = criterion(outputs[0], nn.functional.one_hot(targets, num_classes=10).type(torch.FloatTensor).to(args.device))
+        if args.dataset == "emnist":
+            loss = criterion(outputs[0], nn.functional.one_hot(
+            targets, num_classes=26).type(torch.FloatTensor).to(args.device))
+        else:
+            loss = criterion(outputs[0], nn.functional.one_hot(
+                targets, num_classes=10).type(torch.FloatTensor).to(args.device))
 
     # Now decide whether to add weight decay on last weights and last features
     if args.sep_decay:
@@ -115,7 +119,7 @@ def main():
     device = torch.device("cuda:"+str(args.gpu_id) if torch.cuda.is_available() else "cpu")
     args.device = device
     set_seed(manualSeed = args.seed)
-    trainloader, _, num_classes = make_dataset(args.dataset, args.data_dir, args.batch_size, args.sample_size, SOTA=args.data_augmentation)
+    trainloader, _, num_classes = make_dataset(args.dataset, args.data_dir, args.batch_size, args.sample_size)
     
     if args.model == "MLP":
         model = models.__dict__[args.model](hidden = args.width, depth_relu = args.depth_relu, depth_linear = args.depth_linear, fc_bias=args.bias, num_classes=num_classes).to(device)

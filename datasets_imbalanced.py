@@ -1,6 +1,4 @@
 import torch
-import pickle
-import numpy as np
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR10, MNIST, EMNIST
 import torchvision.transforms as transforms
@@ -19,7 +17,7 @@ class CustomSubsetRandomSampler(SubsetRandomSampler):
     def __iter__(self):
         return (self.indices[i] for i in range(len(self.indices)))
 
-def make_dataset(dataset_name, data_dir, num_data, batch_size=128, SOTA=False):
+def make_dataset(dataset_name, data_dir, num_data, batch_size=128):
     if dataset_name == 'cifar10':
         print('Dataset: CIFAR10.')
         trainset = CIFAR10(root=data_dir, train=True, download=True, transform=transforms.Compose([
@@ -94,10 +92,10 @@ def make_dataset(dataset_name, data_dir, num_data, batch_size=128, SOTA=False):
 
     train_indices = torch.tensor(indices)
     trainloader = DataLoader(
-        trainset, batch_size=batch_size, sampler=CustomSubsetRandomSampler(train_indices), num_workers=1,
+        trainset, batch_size=batch_size, sampler=CustomSubsetRandomSampler(train_indices), num_workers=0,
         shuffle=False)
 
-    testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=1)
+    testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=0)
 
     return trainloader, testloader, num_classes
 

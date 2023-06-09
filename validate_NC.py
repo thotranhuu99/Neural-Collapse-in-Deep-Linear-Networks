@@ -1,6 +1,3 @@
-import sys
-import pickle
-
 import torch
 import scipy.linalg as scilin
 
@@ -12,8 +9,6 @@ import time
 from tqdm import tqdm
 
 
-MNIST_TRAIN_SAMPLES = (5923, 6742, 5958, 6131, 5842, 5421, 5918, 6265, 5851, 5949)
-MNIST_TEST_SAMPLES = (980, 1135, 1032, 1010, 982, 892, 958, 1028, 974, 1009)
 CIFAR10_TRAIN_SAMPLES = 10 * (5000,)
 CIFAR10_TEST_SAMPLES = 10 * (1000,)
 
@@ -35,7 +30,7 @@ class FCFeatures:
 
 def compute_info(args, model, fc_features, dataloader, isTrain=True):
     mu_G_list = [0] * (len(model.fc))
-    if args.dataset in ['mnist', 'cifar10', 'cifar10_random']:
+    if args.dataset in ['cifar10']:
         pairs = [(i, 0) for i in range(10)]
     elif args.dataset == 'emnist':
         pairs = [(i, 0) for i in range(26)]
@@ -59,7 +54,7 @@ def compute_info(args, model, fc_features, dataloader, isTrain=True):
         for i in range(len(model.fc)):
             mu_G_list[i] += torch.sum(features_list[i], dim=0)
         for i in range(len(model.fc)):
-            if args.dataset in ['mnist', 'cifar10', 'cifar10_random']:
+            if args.dataset in ['cifar10']:
                 for y in range(10):
                     indexes = (targets == y).nonzero(as_tuple=True)[0]
                     if indexes.nelement()==0:
@@ -78,20 +73,8 @@ def compute_info(args, model, fc_features, dataloader, isTrain=True):
         top1.update(prec1.item(), inputs.size(0))
         top5.update(prec5.item(), inputs.size(0))
 
-    if args.dataset == 'mnist':
+    if args.dataset == 'cifar10':
         if isTrain:
-            for i in range(len(model.fc)):
-                mu_G_list[i] /= sum(MNIST_TRAIN_SAMPLES)
-                for j in range(len(MNIST_TRAIN_SAMPLES)):
-                    mu_c_dict_list[i][j] /= MNIST_TRAIN_SAMPLES[j]
-        else:
-            for i in range(len(model.fc)):
-                mu_G_list[i] /= sum(MNIST_TEST_SAMPLES)
-                for j in range(len(MNIST_TEST_SAMPLES)):
-                    mu_c_dict_list[i][j] /= MNIST_TEST_SAMPLES[j]
-    elif args.dataset == 'cifar10' or args.dataset == 'cifar10_random':
-        if isTrain:
-            
             for i in range(len(model.fc)):
                 mu_G_list[i] /= sum(CIFAR10_TRAIN_SAMPLES)
                 for j in range(len(CIFAR10_TRAIN_SAMPLES)):
@@ -139,17 +122,12 @@ def compute_Sigma_W(args, model, fc_features, mu_c_dict, dataloader, isTrain=Tru
             else:
                 Sigma_W += ((features[indexes, :] - mu_c_dict[y]).unsqueeze(2) @ (features[indexes, :] - mu_c_dict[y]).unsqueeze(1)).sum(0)
 
-    if args.dataset == 'mnist':
-        if isTrain:
-            Sigma_W /= sum(MNIST_TRAIN_SAMPLES)
-        else:
-            Sigma_W /= sum(MNIST_TEST_SAMPLES)
-    elif args.dataset == 'emnist':
+    if args.dataset == 'emnist':
         if isTrain:
             Sigma_W /= sum(EMNIST_LETTER_TRAIN_SAMPLES)
         else:
             Sigma_W /= sum(EMNIST_LETTER_TEST_SAMPLES)
-    elif args.dataset == 'cifar10' or args.dataset == 'cifar10_random':
+    elif args.dataset == 'cifar10':
         if isTrain:
             Sigma_W /= sum(CIFAR10_TRAIN_SAMPLES)
         else:
@@ -262,7 +240,7 @@ def main():
     device = torch.device("cuda:" + str(args.gpu_id) if torch.cuda.is_available() else "cpu")
     args.device = device
 
-    trainloader, testloader, num_classes = make_dataset(args.dataset, args.data_dir, args.batch_size, args.sample_size, SOTA=False)
+    trainloader, testloader, num_classes = make_dataset(args.dataset, args.data_dir, args.batch_size, args.sample_size)
 
     info_dict = {
         'NC1_collapse_metric': [],
@@ -300,7 +278,6 @@ def main():
                 print(load_path + "/" + 'epoch_' + str(epoch + 1).zfill(3) + '.pth')
                 time.sleep(60)
             model.eval()
-            start = time.time()
             W_list = []
             W_temp = model.fc[-1].weight.clone()
             W_list.append(W_temp)
@@ -345,8 +322,7 @@ def main():
                 NC2_Identity_W = compute_NC2_Identity_W(W_list[i])
                 NC2_ETF_W = compute_NC2_ETF_W(W_list[i])
 
-                NC3_Identity_WH = compute_NC3_Identity_WH(
-                    W_list[i], mu_c_dict=mu_c_dict_train_dict[i])
+                NC3_Identity_WH = compute_NC3_Identity_WH(W_list[i], mu_c_dict=mu_c_dict_train_dict[i])
                 NC3_W_sub_H_centered = compute_NC3_W_sub_H_centered(W_list[i], mu_c_dict_train_dict[i], mu_G_train_dict[i])
                 NC2_ETF_H = compute_NC2_ETF_H(mu_c_dict_train_dict[i], mu_G_train_dict[i])
                 NC2_Identity_H = compute_NC2_Identity_H(mu_c_dict_train_dict[i])

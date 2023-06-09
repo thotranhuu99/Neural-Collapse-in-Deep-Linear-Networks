@@ -1,6 +1,3 @@
-import sys
-import pickle
-
 import torch
 import scipy.linalg as scilin
 
@@ -12,11 +9,10 @@ import time
 import math
 import numpy as np
 import os
-from sympy import Symbol, solve, S
+from sympy import Symbol, solve
 CIFAR10_TRAIN_SAMPLES = [100, 100, 200, 200, 300, 300, 400, 400, 500, 500]
-
 CIFAR10_TEST_SAMPLES = 10 * (1000,)
-# NUM_TRAIN_SAMPLES = sum(CIFAR10_TRAIN_SAMPLES)
+
 EMNIST_LETTER_TRAIN_SAMPLES = [1500, * [600]*5, * [50]*20]
 EMNIST_LETTER_TEST_SAMPLES = 26 * (800,)
 
@@ -229,12 +225,6 @@ def compute_Sigma_W(args, model, fc_features, mu_c_dict, dataloader, isTrain=Tru
 
         features = fc_features.outputs[0][0]
         fc_features.clear()
-        debug_list = []
-        # for b in range(len(targets)):
-        #     y = targets[b].item()
-        #     if y == 0:
-        #         debug_list.append(features[b, :])
-        #     Sigma_W += (features[b, :] - mu_c_dict[y]).unsqueeze(1) @ (features[b, :] - mu_c_dict[y]).unsqueeze(0)
         for y in range(len(mu_c_dict)):
             indexes = (targets == y).nonzero(as_tuple=True)[0]
             if indexes.nelement()==0:
@@ -290,12 +280,10 @@ def main():
 
     if args.dataset == "cifar10":
         trainloader, testloader, num_classes = make_dataset(args.dataset, args.data_dir,
-                                                            CIFAR10_TRAIN_SAMPLES, args.batch_size,
-                                                            args.sample_size)
+                                                            CIFAR10_TRAIN_SAMPLES, args.batch_size)
     elif args.dataset == "emnist":
         trainloader, testloader, num_classes = make_dataset(args.dataset, args.data_dir,
-                                                            EMNIST_LETTER_TRAIN_SAMPLES, args.batch_size,
-                                                            args.sample_size)
+                                                            EMNIST_LETTER_TRAIN_SAMPLES, args.batch_size)
     
     if args.model == "MLP":
         model = models.__dict__[args.model](hidden = args.width, depth_relu = args.depth_relu, depth_linear = args.depth_linear, fc_bias=args.bias, num_classes=num_classes, batchnorm=False).to(device)

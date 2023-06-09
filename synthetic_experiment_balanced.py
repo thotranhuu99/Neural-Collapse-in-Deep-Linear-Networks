@@ -4,13 +4,12 @@ import argparse
 import numpy as np
 import torch.nn.functional as F
 import torch.optim as optim
-import torch.optim.lr_scheduler as lrs
 from tqdm import tqdm
 import scipy.linalg as scilin
 import utils
 import utils
 import math
-from sympy import Symbol, solve, S
+from sympy import Symbol, solve
 
 NUM_CLASS_SAMPLES = [100, 100, 100, 100]
 NUM_SAMPLES = sum(NUM_CLASS_SAMPLES)
